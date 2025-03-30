@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bitcoin Price Tracker</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+        background-color: #f8f9fa;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .price-card {
+        transition: all 0.3s ease;
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        background-color: #fff;
+    }
+    .price-header {
+        background-color: #f7931a;
+        color: white;
+        padding: 20px;
+        text-align: center;
+    }
+    .bitcoin-logo {
+        width: 64px;
+        height: 64px;
+        margin-bottom: 10px;
+    }
+    .price-body {
+        padding: 25px;
+    }
+    .price-value {
+        font-size: 3rem;
+        font-weight: bold;
+        color: #212529;
+    }
+    .price-change {
+        font-size: 1.2rem;
+        margin-top: 10px;
+    }
+    .positive-change {
+        color: #28a745;
+    }
+    .negative-change {
+        color: #dc3545;
+    }
+    .update-time {
+        font-size: 0.85rem;
+        color: #6c757d;
+        margin-top: 15px;
+    }
+    .market-data {
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 1px solid #e9ecef;
+    }
+    .flicker {
+        animation: flicker-animation 0.5s ease;
+    }
+    @keyframes flicker-animation {
+        0% { opacity: 0.7; }
+        100% { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+      <div class="price-card mb-4" id="bitcoinCard">
+        <div class="price-header">
+          <img src="https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@bea1507617bc76ba80019062ff8d0ca92796d9ed/svg/color/btc.svg" alt="Bitcoin Logo" class="bitcoin-logo">
+          <h1 class="mb-0">Bitcoin (BTC)</h1>
+        </div>
+        <div class="price-body">
+          <div class="text-center">
+            <div class="price-value" id="bitcoinPrice">---.--</div>
+            <div class="price-change" id="bitcoinChange">--.--%</div>
+            <div class="update-time" id="lastUpdated">Actualizando...</div>
+          </div>
+
+          <div class="market-data">
+            <div class="row">
+              <div class="col-6">
+                <div class="mb-3">
+                  <h6 class="text-muted">Market Cap</h6>
+                  <div id="marketCap">$---.-- B</div>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="mb-3">
+                  <h6 class="text-muted">Volume (24h)</h6>
+                  <div id="volume24h">$---.-- B</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+      const priceElement = document.getElementById('bitcoinPrice');
+      const changeElement = document.getElementById('bitcoinChange');
+      const lastUpdatedElement = document.getElementById('lastUpdated');
+      const marketCapElement = document.getElementById('marketCap');
+      const volume24hElement = document.getElementById('volume24h');
+      const bitcoinCard = document.getElementById('bitcoinCard');
+
+      // Formateo para números
+      const formatter = new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: 'USD',
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+      });
+
+      const largeNumberFormatter = new Intl.NumberFormat('en-US', {
+          style: 'currency',
+          currency: 'USD',
+          notation: 'compact',
+          compactDisplay: 'short',
+          maximumFractionDigits: 2
+      });
+
+      // Conexión a Server-Sent Events (SSE)
+      const eventSource = new EventSource('/api/bitcoin/price');
+
+      eventSource.onmessage = function(event) {
+          const data = JSON.parse(event.data);
+
+          // Aplicar animación
+          bitcoinCard.classList.add('flicker');
+          setTimeout(() => {
+              bitcoinCard.classList.remove('flicker');
+          }, 500);
+
+          // Actualizar precio
+          priceElement.textContent = formatter.format(data.price);
+
+          // Actualizar cambio de precio
+          const changeValue = data.percentChange24h;
+          changeElement.textContent = (changeValue > 0 ? '+' : '') + changeValue.toFixed(2) + '%';
+
+          if (changeValue > 0) {
+              changeElement.className = 'price-change positive-change';
+              changeElement.innerHTML = '▲ ' + changeElement.textContent;
+          } else {
+              changeElement.className = 'price-change negative-change';
+              changeElement.innerHTML = '▼ ' + changeElement.textContent;
+          }
+
+          // Actualizar hora
+          const lastUpdated = new Date(data.lastUpdated);
+          lastUpdatedElement.textContent = 'Actualizado: ' + lastUpdated.toLocaleTimeString();
+
+          // Actualizar datos de mercado
+          marketCapElement.textContent = largeNumberFormatter.format(data.marketCap);
+          volume24hElement.textContent = largeNumberFormatter.format(data.volume24h);
+      };
+
+      eventSource.onerror = function() {
+          console.error('Se perdió la conexión con el servidor. Intentando reconectar...');
+          lastUpdatedElement.textContent = 'Reconectando...';
+      };
+  });
+</script>
+</body>
+</html>
