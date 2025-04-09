@@ -8,11 +8,12 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class BitcoinPrice {
+public class CoinPrice {
+    private String symbol;
     private BigDecimal price;
     private BigDecimal percentChange24h;
     private BigDecimal marketCap;
     private BigDecimal volume24h;
     private LocalDateTime lastUpdated;
-    private String currency = "USD";
+
 }

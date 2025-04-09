@@ -8,7 +8,7 @@ import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
 
 @Configuration
-public class WebSocketConfig  {
+public class WebClientConfig {
 
     @Value("${coinmarketcap.api.url}")
     private String apiUrl;

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Bitcoin Price Tracker</title>
+  <title>Crypto Coin Price Tracker</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
     body {
@@ -23,7 +23,7 @@
         padding: 20px;
         text-align: center;
     }
-    .bitcoin-logo {
+    .coin-logo {
         width: 64px;
         height: 64px;
         margin-bottom: 10px;
@@ -69,15 +69,17 @@
 <div class="container py-5">
   <div class="row justify-content-center">
     <div class="col-md-8 col-lg-6">
-      <div class="price-card mb-4" id="bitcoinCard">
+      <div class="price-card mb-4" id="coinCard">
         <div class="price-header">
-          <img src="https://cdn.jsdelivr.net/gh/atomiclabs/cryptocurrency-icons@bea1507617bc76ba80019062ff8d0ca92796d9ed/svg/color/btc.svg" alt="Bitcoin Logo" class="bitcoin-logo">
-          <h1 class="mb-0">Bitcoin (BTC)</h1>
+          <img src="" alt="Cripton Logo" class="coin-logo">
+          <h1 class="mb-0">Crypton RX</h1>
         </div>
+
         <div class="price-body">
           <div class="text-center">
-            <div class="price-value" id="bitcoinPrice">---.--</div>
-            <div class="price-change" id="bitcoinChange">--.--%</div>
+            <div class="coin-name" id="coinName">N/A</div>
+            <div class="price-value" id="coinPrice">---.--</div>
+            <div class="price-change" id="coinChange">--.--%</div>
             <div class="update-time" id="lastUpdated">Actualizando...</div>
           </div>
 
@@ -97,6 +99,14 @@
               </div>
             </div>
           </div>
+          <label for="coinSelect"></label>
+          <select id="coinSelect" name="coinSelect">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+          </select>
         </div>
       </div>
     </div>
@@ -105,70 +115,80 @@
 
 <script>
   document.addEventListener('DOMContentLoaded', function() {
-      const priceElement = document.getElementById('bitcoinPrice');
-      const changeElement = document.getElementById('bitcoinChange');
-      const lastUpdatedElement = document.getElementById('lastUpdated');
-      const marketCapElement = document.getElementById('marketCap');
-      const volume24hElement = document.getElementById('volume24h');
-      const bitcoinCard = document.getElementById('bitcoinCard');
+     const nameElement = document.getElementById('coinName');
+     const priceElement = document.getElementById('coinPrice');
+     const changeElement = document.getElementById('coinChange');
+     const lastUpdatedElement = document.getElementById('lastUpdated');
+     const marketCapElement = document.getElementById('marketCap');
+     const volume24hElement = document.getElementById('volume24h');
+     const coinCard = document.getElementById('coinCard');
+     const coinSelect = document.getElementById('coinSelect');
 
-      // Formateo para números
-      const formatter = new Intl.NumberFormat('en-US', {
-          style: 'currency',
-          currency: 'USD',
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2
-      });
+     let coinId = coinSelect.value;
+     let eventSource = new EventSource(`/api/coin/price/1`);
 
-      const largeNumberFormatter = new Intl.NumberFormat('en-US', {
-          style: 'currency',
-          currency: 'USD',
-          notation: 'compact',
-          compactDisplay: 'short',
-          maximumFractionDigits: 2
-      });
 
-      // Conexión a Server-Sent Events (SSE)
-      const eventSource = new EventSource('/api/bitcoin/price');
+     eventSource.onmessage = (event) => fluxEvent(event) ;
 
-      eventSource.onmessage = function(event) {
-          const data = JSON.parse(event.data);
+     coinSelect.addEventListener('change', function () {
+         coinId = this.value;
 
-          // Aplicar animación
-          bitcoinCard.classList.add('flicker');
-          setTimeout(() => {
-              bitcoinCard.classList.remove('flicker');
-          }, 500);
+         eventSource.close();
+         eventSource.close();
+         eventSource = new EventSource(`/api/coin/price/${coinId}`);
 
-          // Actualizar precio
-          priceElement.textContent = formatter.format(data.price);
+         eventSource.onmessage = (event) => fluxEvent(event) ;
 
-          // Actualizar cambio de precio
-          const changeValue = data.percentChange24h;
-          changeElement.textContent = (changeValue > 0 ? '+' : '') + changeValue.toFixed(2) + '%';
+         eventSource.onerror = function() {
+             console.error('Se perdió la conexión con el servidor. Intentando reconectar...');
+             lastUpdatedElement.textContent = 'Reconectando...';
+         };
+     });
 
-          if (changeValue > 0) {
-              changeElement.className = 'price-change positive-change';
-              changeElement.innerHTML = '▲ ' + changeElement.textContent;
-          } else {
-              changeElement.className = 'price-change negative-change';
-              changeElement.innerHTML = '▼ ' + changeElement.textContent;
-          }
+     // Asegúrate de tener el formateador también en este scope
+     const formatter = new Intl.NumberFormat('en-US', {
+         style: 'currency',
+         currency: 'USD',
+         minimumFractionDigits: 2,
+         maximumFractionDigits: 2
+     });
 
-          // Actualizar hora
-          const lastUpdated = new Date(data.lastUpdated);
-          lastUpdatedElement.textContent = 'Actualizado: ' + lastUpdated.toLocaleTimeString();
+     const largeNumberFormatter = new Intl.NumberFormat('en-US', {
+         style: 'currency',
+         currency: 'USD',
+         notation: 'compact',
+         compactDisplay: 'short',
+         maximumFractionDigits: 2
+     });
 
-          // Actualizar datos de mercado
-          marketCapElement.textContent = largeNumberFormatter.format(data.marketCap);
-          volume24hElement.textContent = largeNumberFormatter.format(data.volume24h);
-      };
+  function fluxEvent(event) {
+             const data = JSON.parse(event.data);
 
-      eventSource.onerror = function() {
-          console.error('Se perdió la conexión con el servidor. Intentando reconectar...');
-          lastUpdatedElement.textContent = 'Reconectando...';
-      };
-  });
+             coinCard.classList.add('flicker');
+             setTimeout(() => coinCard.classList.remove('flicker'), 500);
+
+             nameElement.textContent = data.symbol;
+             priceElement.textContent = formatter.format(data.price);
+
+             const changeValue = data.percentChange24h;
+             changeElement.textContent = (changeValue > 0 ? '+' : '') + changeValue.toFixed(2) + '%';
+
+             if (changeValue > 0) {
+                 changeElement.className = 'price-change positive-change';
+                 changeElement.innerHTML = '▲ ' + changeElement.textContent;
+             } else {
+                 changeElement.className = 'price-change negative-change';
+                 changeElement.innerHTML = '▼ ' + changeElement.textContent;
+             }
+
+             const lastUpdated = new Date(data.lastUpdated);
+             lastUpdatedElement.textContent = 'Actualizado: ' + lastUpdated.toLocaleTimeString();
+             marketCapElement.textContent = largeNumberFormatter.format(data.marketCap);
+             volume24hElement.textContent = largeNumberFormatter.format(data.volume24h);
+         };
+ });
+
+
 </script>
 </body>
 </html>
