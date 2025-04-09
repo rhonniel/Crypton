@@ -1,5 +1,5 @@
-/* Estilos adicionales para Bitcoin Tracker */
-.bitcoin-trend-indicator {
+
+.coin-trend-indicator {
     display: inline-block;
     width: 12px;
     height: 12px;
@@ -27,8 +27,14 @@
 }
 
 /* Responsive adjustments */
-@media (max-width: 576px) {
+@media (max-width: 476px) {
     .price-value {
+        font-size: 2.5rem;
+    }
+}
+
+@media (max-width: 676px) {
+    .coin-name {
         font-size: 2.5rem;
     }
 }
